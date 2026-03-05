@@ -29,7 +29,6 @@ import mani_skill2.envs  # registers envs
 
 MANISKILL_ENVS = [
     "PickCube-v0",
-    # 你 registry 目前只看到 PickCube-v0；之後註冊更多再加進來
 ]
 
 def parse_args():
@@ -48,15 +47,6 @@ def parse_args():
 def _first_dict_value(d):
     return next(iter(d.values()))
 
-
-def get_observation(obs, device, H, W, cam_name="base_camera"):
-    """
-    ManiSkill2 obs -> (img_torch, state_torch)
-    img_torch: (1,3,H,W) float32 [0,1]
-    state_torch: (1,7) float32 [pos3, euler3, gripper1]
-    """
-    # 除錯用：觀察當前觀測資料有哪些第一層 key
-    print("obs keys:", obs.keys())
 	
 def get_observation(obs, device, H, W, cam_name="base_camera"):
     # 將 ManiSkill2 的 observation 轉成 Pi-0 可直接消化的影像+狀態向量
