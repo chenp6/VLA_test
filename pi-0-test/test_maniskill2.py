@@ -28,13 +28,13 @@ import mani_skill2.envs  # registers envs
 
 
 MANISKILL_ENVS = [
-    "PickCube-v0",
+    "LiftCube-v0",
 ]
 
 def parse_args():
     # 集中管理 CLI 參數，方便在不同實驗設定間切換
     p = argparse.ArgumentParser()
-    p.add_argument("--env", type=str, default="PickCube-v0", choices=MANISKILL_ENVS)
+    p.add_argument("--env", type=str, default="LiftCube-v0", choices=MANISKILL_ENVS)
     p.add_argument("--episodes", type=int, default=10)
     p.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"])
     p.add_argument("--dtype", type=str, default="float16", choices=["float16", "bfloat16", "float32"])
