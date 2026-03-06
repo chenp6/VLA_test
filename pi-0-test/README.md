@@ -15,6 +15,7 @@ This folder contains scripts for testing the **INTACT π₀ BridgeV2 finetuned c
 | `test_sanity.py` | Minimal inference test with dummy inputs (no simulator needed) |
 | `test_offline.py` | Offline action prediction on saved BridgeV2 trajectory data (`.pt` file) |
 | `test_simplerenv.py` | Full SimplerEnv evaluation (optional, closest to INTACT paper) |
+| `test_maniskill3.py` | ManiSkill3 custom task (`PickCubeWidowX250S-v1`) using the original Pi-0 policy |
 
 ---
 
@@ -64,6 +65,12 @@ python test_simplerenv.py --task carrot_on_plate --episodes 20
 ```
 
 ---
+
+### Step 6 (optional) — ManiSkill3 custom task (widowx250s pick cube)
+
+```bash
+python test_maniskill3.py --episodes 10 --instruction "pick up the cube"
+```
 
 ## Model Details
 
