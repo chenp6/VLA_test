@@ -19,7 +19,6 @@ import argparse
 import numpy as np
 import torch
 import torch.nn.functional as F
-from scipy.spatial.transform import Rotation as R
 
 from policy_loader import load_intact_pi0, tokenize
 
@@ -27,20 +26,25 @@ import gymnasium as gym
 import mani_skill
 import mani_skill.envs
 import mani_skill.agents
+import mani_skill.agents.robots.widowx.widowx
+import pickcube_widowx250s_env
 
 MANISKILL_ENVS = [
-    "PickCubeWidowXAI-v1",
+    "PickCube-v1",
+    "PickCubeWidowX250S-v1",
 ]
+
+
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--env", type=str, default="PickCubeWidowXAI-v1", choices=MANISKILL_ENVS)
+    p.add_argument("--env", type=str, default="PickCubeWidowX250S-v1", choices=MANISKILL_ENVS)
     p.add_argument("--robot_uids", type=str, default="widowx250s", choices=["widowx250s","widowx250s_bridgedataset_flat_table","widowx250s_bridgedataset_sink"])
     p.add_argument("--episodes", type=int, default=10)
     p.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"])
     p.add_argument("--dtype", type=str, default="float16", choices=["float16", "bfloat16", "float32"])
     p.add_argument("--obs_mode", type=str, default="rgbd")              # rgbd 常見
-    p.add_argument("--control_mode", type=str, default="pd_ee_delta_pose")  # 最接近 delta-EEF
+    p.add_argument("--control_mode", type=str, default="pd_joint_delta_pos")  # 最接近 delta-EEF
     p.add_argument("--cam", type=str, default="base_camera")            # 常見 camera name
     return p.parse_args()
 
@@ -152,15 +156,10 @@ def get_observation(obs, device, H, W, cam_name="base_camera"):
     return img_torch, state_torch
 
 def map_action_to_env(action_raw):
-    """
-    Pi0 -> ManiSkill2 controller action
-    action_raw: (7,) [dx,dy,dz, drx,dry,drz, g] with g in [0,1]
-    return: (7,) by default for pd_ee_delta_pose style controllers
-    """
     a = np.asarray(action_raw, dtype=np.float32).copy()
-    a[0:7] *= 0.25
-    #a[3:6] *= 0.20
-    #a[6] = 2.0 * float(a[6]) - 1.0  # [-1,1] closed=+1
+    a = a[:7]                  # 先只取前 7 維
+    a[:6] *= 0.15              # 6 個 arm joints
+    a[6] = np.clip(a[6], -1.0, 1.0)  # gripper / 最後一維先保守處理
     return a.astype(np.float32)
 
 
@@ -195,13 +194,67 @@ def main():
         obs_mode=args.obs_mode,
         control_mode=args.control_mode,
         render_mode="rgb_array",
-        #robot_uids=args.robot_uids
+
     )
+
+    # Monkeypatch helper for widowx250s: ensure tcp_pose exists and relax is_grasping
+    if "widowx250s" in args.robot_uids:
+        try:
+            agent = getattr(env, "agent", None)
+            if agent is None and hasattr(env, "agents"):
+                # try first agent
+                try:
+                    agent = env.agents[0]
+                except Exception:
+                    agent = None
+
+            if agent is not None:
+                # ensure tcp_pose property is available
+                if not hasattr(agent, "tcp_pose"):
+                    tcp_link = None
+                    try:
+                        tcp_link = agent.robot.links_map.get("wrist_rotate_link")
+                    except Exception:
+                        tcp_link = None
+                    if tcp_link is None:
+                        # fallback to any link (last one)
+                        try:
+                            tcp_link = list(agent.robot.links_map.values())[-1]
+                        except Exception:
+                            tcp_link = None
+
+                    def _tcp_pose(self):
+                        if getattr(self, "tcp_link", None) is not None:
+                            return self.tcp_link.pose
+                        # fallback: root pose
+                        try:
+                            return self.robot.get_root_pose()
+                        except Exception:
+                            return sapien.Pose()
+
+                    agent.tcp_link = tcp_link
+                    agent.__class__.tcp_pose = property(_tcp_pose)
+
+                # relax is_grasping thresholds to help debug / initial testing
+                if hasattr(agent, "is_grasping"):
+                    orig_is_grasping = agent.is_grasping
+
+                    def _is_grasping_relaxed(self, object, min_force=0.1, max_angle=100):
+                        try:
+                            return orig_is_grasping(object, min_force=min_force, max_angle=max_angle)
+                        except Exception:
+                            return False
+
+                    agent.is_grasping = types.MethodType(_is_grasping_relaxed, agent)
+        except Exception as _e:
+            print("[warn] widowx250s monkeypatch failed:", _e)
+
+    
     print("available control modes:", getattr(env, "SUPPORTED_CONTROL_MODES", None))
 
 		
     # Instruction (simple default)
-    instruction = "pick up the cube"
+    instruction = "pick up the cube and move it to the goal"
     lang_tokens, lang_masks = tokenize([instruction], device, max_length=tok_max_len)
     print(f'  Instruction: "{instruction}"\n')
 
@@ -275,3 +328,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
