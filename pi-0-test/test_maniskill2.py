@@ -61,6 +61,13 @@ def _find_rgb_anywhere(obj):
     return None
 
 
+def _to_numpy(x):
+    """Convert torch / array-like data to numpy safely."""
+    if isinstance(x, torch.Tensor):
+        return x.detach().cpu().numpy()
+    return np.asarray(x)
+
+
 def get_observation(obs, device, H, W, cam_name="base_camera"):
     # ---- RGB ----
     rgb = None
@@ -97,7 +104,7 @@ def get_observation(obs, device, H, W, cam_name="base_camera"):
             f"Cannot find RGB. obs_keys={obs_keys}, image_keys={image_keys}, sensor_data_keys={sensor_keys}"
         )
 
-    rgb = np.asarray(rgb)
+    rgb = _to_numpy(rgb)
     if rgb.ndim == 4 and rgb.shape[0] == 1:
         rgb = rgb[0]
     if rgb.shape[-1] != 3:
@@ -110,7 +117,7 @@ def get_observation(obs, device, H, W, cam_name="base_camera"):
 
     # ---- State (EEF/TCP pose + gripper) ----
     def parse_pose7(x):
-        x = np.asarray(x).reshape(-1)
+        x = _to_numpy(x).reshape(-1)
         if x.shape[0] >= 7:
             pos = x[:3]
             quat = x[3:7]
@@ -134,16 +141,16 @@ def get_observation(obs, device, H, W, cam_name="base_camera"):
         # pose split
         if eef_pos is None:
             if "tcp_pos" in extra and "tcp_quat" in extra:
-                eef_pos = np.asarray(extra["tcp_pos"]).reshape(-1)[:3]
-                eef_quat = np.asarray(extra["tcp_quat"]).reshape(-1)[:4]
+                eef_pos = _to_numpy(extra["tcp_pos"]).reshape(-1)[:3]
+                eef_quat = _to_numpy(extra["tcp_quat"]).reshape(-1)[:4]
             elif "ee_pos" in extra and "ee_quat" in extra:
-                eef_pos = np.asarray(extra["ee_pos"]).reshape(-1)[:3]
-                eef_quat = np.asarray(extra["ee_quat"]).reshape(-1)[:4]
+                eef_pos = _to_numpy(extra["ee_pos"]).reshape(-1)[:3]
+                eef_quat = _to_numpy(extra["ee_quat"]).reshape(-1)[:4]
 
         # gripper (best-effort)
         for k in ["gripper_open", "gripper", "gripper_qpos", "gripper_state"]:
             if k in extra:
-                g = np.asarray(extra[k]).reshape(-1)
+                g = _to_numpy(extra[k]).reshape(-1)
                 gv = float(np.mean(g))
                 gripper_norm = gv if 0.0 <= gv <= 1.0 else float(np.clip(1.0 - (gv / 0.04), 0.0, 1.0))
                 break
@@ -160,7 +167,7 @@ def get_observation(obs, device, H, W, cam_name="base_camera"):
 
             for k in ["gripper_open", "gripper", "gripper_qpos", "gripper_state"]:
                 if k in agent and gripper_norm is None:
-                    g = np.asarray(agent[k]).reshape(-1)
+                    g = _to_numpy(agent[k]).reshape(-1)
                     gv = float(np.mean(g))
                     gripper_norm = gv if 0.0 <= gv <= 1.0 else float(np.clip(1.0 - (gv / 0.04), 0.0, 1.0))
                     break
