@@ -333,11 +333,11 @@ def main():
                 done = bool(terminated or truncated)
                 max_reward = max(max_reward, float(reward))
                 step += 1
+                if step % 80 == 0:
+                    print(f"    Step {step:3d} | max_reward: {max_reward:.4f}")
                 if done or step >= 400:
                     break
 
-            if step % 80 == 0:
-                print(f"    Step {step:3d} | max_reward: {max_reward:.4f}")
 
         is_success = bool(info.get("success", False) or info.get("is_success", False) or (max_reward > 0.9))
         successes += int(is_success)
