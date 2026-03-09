@@ -24,7 +24,7 @@ from scipy.spatial.transform import Rotation as R
 from policy_loader import load_intact_pi0, tokenize
 
 import gymnasium as gym
-import mani_skill2.envs  # registers envs
+import mani_skill.envs  # registers envs
 
 
 MANISKILL_ENVS = [
