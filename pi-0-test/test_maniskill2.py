@@ -26,6 +26,11 @@ def _get_cli_render_mode(default="rgb_array"):
 
 
 _cli_render_mode = _get_cli_render_mode(default="rgb_array")
+_has_display = bool(os.environ.get("DISPLAY"))
+if _cli_render_mode == "human" and not _has_display:
+    print("[WARN] --render_mode human requested but DISPLAY is not set. Fallback to rgb_array.")
+    _cli_render_mode = "rgb_array"
+
 os.environ["SAPIEN_DISABLE_VULKAN"] = "1"
 if _cli_render_mode == "human":
     # Keep DISPLAY for interactive viewer.
@@ -232,6 +237,9 @@ def map_action_to_env(action_raw):
 
 def main():
     args = parse_args()
+    if args.render_mode == "human" and not os.environ.get("DISPLAY"):
+        print("[WARN] render_mode=human but DISPLAY is not available. Using rgb_array instead.")
+        args.render_mode = "rgb_array"
 
     device = "cuda" if (args.device == "auto" and torch.cuda.is_available()) else args.device
     if args.device != "auto":
@@ -320,6 +328,8 @@ def main():
 
             for _ in range(steps_per_action):
                 obs, reward, terminated, truncated, info = env.step(env_action)
+                if args.render_mode == "human":
+                    env.render()
                 done = bool(terminated or truncated)
                 max_reward = max(max_reward, float(reward))
                 step += 1
