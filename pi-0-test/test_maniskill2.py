@@ -41,7 +41,14 @@ def parse_args():
     p.add_argument("--obs_mode", type=str, default="rgbd")              # rgbd 常見
     p.add_argument("--control_mode", type=str, default="pd_ee_delta_pose")  # 最接近 delta-EEF
     p.add_argument("--cam", type=str, default="base_camera")            # 常見 camera name
-    p.add_argument("--render_mode", type=str, default="rgb_array", choices=["human", "rgb_array"])  # 最接近 delta-EEF
+    p.add_argument("--render_mode", type=str, default="rgb_array", choices=["human", "rgb_array"])  
+    p.add_argument(
+        "--shader",
+        type=str,
+        default="minimal",
+        choices=["minimal", "default", "rt", "rt-med", "rt-fast"],
+    )
+
 
     return p.parse_args()
 
@@ -230,7 +237,8 @@ def main():
         args.env,
         obs_mode=args.obs_mode,
         control_mode=args.control_mode,
-        render_mode="rgb_array",
+        render_mode=args.render_mode,
+        shader=args.shader
     )
     print("available control modes:", getattr(env, "SUPPORTED_CONTROL_MODES", None))
 
