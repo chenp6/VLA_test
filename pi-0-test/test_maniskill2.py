@@ -48,20 +48,31 @@ def _first_dict_value(d):
     return next(iter(d.values()))
 
 
-def get_observation(obs, device, H, W, cam_name="base_camera"):
-    """
-    ManiSkill2 obs -> (img_torch, state_torch)
-    img_torch: (1,3,H,W) float32 [0,1]
-    state_torch: (1,7) float32 [pos3, euler3, gripper1]
-    """
-    print("obs keys:", obs.keys())
-	
+def _find_rgb_anywhere(obj):
+    """Best-effort recursive RGB lookup in nested observation dicts."""
+    if isinstance(obj, dict):
+        for key in ("rgb", "color", "Color"):
+            if key in obj:
+                return obj[key]
+        for value in obj.values():
+            rgb = _find_rgb_anywhere(value)
+            if rgb is not None:
+                return rgb
+    return None
+
+
 def get_observation(obs, device, H, W, cam_name="base_camera"):
     # ---- RGB ----
     rgb = None
-    if isinstance(obs, dict) and "image" in obs and isinstance(obs["image"], dict):
-        img_block = obs["image"]
+    img_block = None
 
+    if isinstance(obs, dict):
+        if isinstance(obs.get("image"), dict):
+            img_block = obs["image"]
+        elif isinstance(obs.get("sensor_data"), dict):
+            img_block = obs["sensor_data"]
+
+    if isinstance(img_block, dict) and len(img_block) > 0:
         cam_block = img_block.get(cam_name)
         if cam_block is None:
             cam_block = next(iter(img_block.values()))
@@ -70,11 +81,21 @@ def get_observation(obs, device, H, W, cam_name="base_camera"):
             rgb = cam_block.get("rgb", None)
             if rgb is None:
                 rgb = cam_block.get("color", None)
+            if rgb is None:
+                rgb = cam_block.get("Color", None)
         else:
             rgb = cam_block
 
+        if rgb is None:
+            rgb = _find_rgb_anywhere(img_block)
+
     if rgb is None:
-        raise KeyError(f"Cannot find rgb. image keys={list(obs.get('image', {}).keys())}")
+        image_keys = list(obs.get("image", {}).keys()) if isinstance(obs.get("image"), dict) else None
+        sensor_keys = list(obs.get("sensor_data", {}).keys()) if isinstance(obs.get("sensor_data"), dict) else None
+        obs_keys = list(obs.keys()) if isinstance(obs, dict) else type(obs).__name__
+        raise KeyError(
+            f"Cannot find RGB. obs_keys={obs_keys}, image_keys={image_keys}, sensor_data_keys={sensor_keys}"
+        )
 
     rgb = np.asarray(rgb)
     if rgb.ndim == 4 and rgb.shape[0] == 1:
