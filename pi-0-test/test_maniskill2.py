@@ -337,6 +337,7 @@ def main():
                 step += 1
                 if step % 1 == 0:
                     print(f"    Step {step:3d} | max_reward: {max_reward:.4f}")
+                print(f"    Action: {done}")
                 if done or step >= 400:
                     break
 
