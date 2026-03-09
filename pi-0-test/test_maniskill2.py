@@ -224,7 +224,10 @@ def main():
     print("INTACT Pi-0 — ManiSkill2 Evaluation")
     print("=" * 60)
     print(f"  Env: {args.env}  |  Episodes: {args.episodes}")
-    print(f"  Obs: {args.obs_mode} | Control: {args.control_mode} | Cam: {args.cam}\n")
+    print(
+        f"  Obs: {args.obs_mode} | Control: {args.control_mode} | "
+        f"Cam: {args.cam} | Render: {args.render_mode} | Shader: {args.shader}\n"
+    )
 
     # 1) Load model
     policy, image_key, (H, W) = load_intact_pi0(MODEL_ID, device=device, torch_dtype=torch_dtype)
@@ -238,7 +241,9 @@ def main():
         obs_mode=args.obs_mode,
         control_mode=args.control_mode,
         render_mode=args.render_mode,
-        shader=args.shader
+        sensor_configs={"shader_pack": args.shader},
+        human_render_camera_configs={"shader_pack": args.shader},
+        viewer_camera_configs={"shader_pack": args.shader},
     )
     print("available control modes:", getattr(env, "SUPPORTED_CONTROL_MODES", None))
 
