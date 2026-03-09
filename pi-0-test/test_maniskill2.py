@@ -337,7 +337,11 @@ def main():
                 step += 1
                 if step % 1 == 0:
                     print(f"    Step {step:3d} | max_reward: {max_reward:.4f}")
-                print(f"    Action: {done}")
+                if terminated or truncated:
+                    print(f"[END] terminated={terminated}, truncated={truncated}, reward={reward:.4f}")
+                    print(f"[END] info keys: {list(info.keys())}")
+                    print(f"[END] info: {info}")
+
                 if done or step >= 400:
                     break
 
