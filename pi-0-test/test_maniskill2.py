@@ -41,6 +41,8 @@ def parse_args():
     p.add_argument("--obs_mode", type=str, default="rgbd")              # rgbd 常見
     p.add_argument("--control_mode", type=str, default="pd_ee_delta_pose")  # 最接近 delta-EEF
     p.add_argument("--cam", type=str, default="base_camera")            # 常見 camera name
+    p.add_argument("--render_mode", type=str, default="rgb_array", choices=["human", "rgb_array"])  # 最接近 delta-EEF
+
     return p.parse_args()
 
 
