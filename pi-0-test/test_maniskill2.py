@@ -62,6 +62,7 @@ MANISKILL_ENVS = [
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--env", type=str, default="PickCube-v1", choices=MANISKILL_ENVS)
+    p.add_argument("--robot", type=str, default="panda")
     p.add_argument("--episodes", type=int, default=10)
     p.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"])
     p.add_argument("--dtype", type=str, default="float16", choices=["float16", "bfloat16", "float32"])
@@ -253,7 +254,7 @@ def main():
     print("=" * 60)
     print("INTACT Pi-0 — ManiSkill2 Evaluation")
     print("=" * 60)
-    print(f"  Env: {args.env}  |  Episodes: {args.episodes}")
+    print(f"  Env: {args.env} | Robot: {args.robot} | Episodes: {args.episodes}")
     print(
         f"  Obs: {args.obs_mode} | Control: {args.control_mode} | "
         f"Cam: {args.cam} | Render: {args.render_mode} | Shader: {args.shader}\n"
@@ -268,6 +269,7 @@ def main():
     # 2) Make env (render_mode rgb_array to avoid window)
     env = gym.make(
         args.env,
+        robot_uids=args.robot,
         obs_mode=args.obs_mode,
         control_mode=args.control_mode,
         render_mode=args.render_mode,
