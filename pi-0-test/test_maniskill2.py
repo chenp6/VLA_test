@@ -335,7 +335,7 @@ def main():
                 done = bool(terminated or truncated)
                 max_reward = max(max_reward, float(reward))
                 step += 1
-                if step % 4 == 0:
+                if step % 1 == 0:
                     print(f"    Step {step:3d} | max_reward: {max_reward:.4f}")
                 if done or step >= 400:
                     break
