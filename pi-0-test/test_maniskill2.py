@@ -8,12 +8,34 @@ Keeps the same high-level assumptions as the robosuite script:
 - Policy @ 5Hz, Sim @ 20Hz (4 env steps per policy action)
 """
 
-# ---- IMPORTANT: force EGL + disable Vulkan BEFORE importing sapien / mani_skill2 ----
 import os
+import sys
+
+# ---- IMPORTANT: configure render backend BEFORE importing sapien / mani_skill ----
+# We parse only --render_mode from argv so "human" can keep DISPLAY-based viewer.
+def _get_cli_render_mode(default="rgb_array"):
+    argv = sys.argv[1:]
+    for i, arg in enumerate(argv):
+        if arg.startswith("--render_mode="):
+            return arg.split("=", 1)[1].strip()
+        if arg.startswith("--render-mode="):
+            return arg.split("=", 1)[1].strip()
+        if arg in ("--render_mode", "--render-mode") and i + 1 < len(argv):
+            return argv[i + 1].strip()
+    return default
+
+
+_cli_render_mode = _get_cli_render_mode(default="rgb_array")
 os.environ["SAPIEN_DISABLE_VULKAN"] = "1"
-os.environ["SAPIEN_RENDER_SYSTEM"] = "egl"
-os.environ["EGL_PLATFORM"] = "surfaceless"
-os.environ.pop("DISPLAY", None)
+if _cli_render_mode == "human":
+    # Keep DISPLAY for interactive viewer.
+    os.environ.pop("SAPIEN_RENDER_SYSTEM", None)
+    os.environ.pop("EGL_PLATFORM", None)
+else:
+    # Headless rendering path (rgb_array).
+    os.environ["SAPIEN_RENDER_SYSTEM"] = "egl"
+    os.environ["EGL_PLATFORM"] = "surfaceless"
+    os.environ.pop("DISPLAY", None)
 
 import argparse
 import numpy as np
