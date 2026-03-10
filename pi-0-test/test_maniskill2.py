@@ -330,15 +330,18 @@ def main():
 
             for _ in range(steps_per_action):
                 obs, reward, terminated, truncated, info = env.step(env_action)
+                reward_val = float(_to_numpy(reward).reshape(-1)[0])
+                terminated_flag = bool(_to_numpy(terminated).reshape(-1)[0])
+                truncated_flag = bool(_to_numpy(truncated).reshape(-1)[0])
                 if args.render_mode == "human":
                     env.render()
-                done = bool(terminated or truncated)
-                max_reward = max(max_reward, float(reward))
+                done = bool(terminated_flag or truncated_flag)
+                max_reward = max(max_reward, reward_val)
                 step += 1
                 if step % 1 == 0:
                     print(f"    Step {step:3d} | max_reward: {max_reward:.4f}")
-                if terminated or truncated:
-                    print(f"[END] terminated={terminated}, truncated={truncated}, reward={reward:.4f}")
+                if terminated_flag or truncated_flag:
+                    print(f"[END] terminated={terminated_flag}, truncated={truncated_flag}, reward={reward_val:.4f}")
                     print(f"[END] info keys: {list(info.keys())}")
                     print(f"[END] info: {info}")
 
